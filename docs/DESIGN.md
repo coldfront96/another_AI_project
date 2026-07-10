@@ -46,6 +46,17 @@ existing agent-simulation framework.
   death, village-wide loss), are real. This mirrors real-world learning through
   consequence (aviation safety, nuclear safety, etc.) rather than removing
   stakes.
+- **No vanilla villagers.** Vanilla Villager entities are prevented from ever
+  existing (their spawn is event-cancelled at the world layer, covering
+  structure-generation spawns, breeding, curing, eggs, and chunk load), so the
+  world's only inhabitants are project-controlled settlers. Generated village
+  structures, job-site blocks, beds, and loot are preserved untouched and
+  remain fully usable by settlers under normal vanilla mechanics — no
+  interaction gate, per "No artificial safety walls" above. Villager-driven
+  mechanics (natural iron golem spawns, zombie village sieges, village cat
+  spawns) never trigger as a natural consequence: they key off villager
+  presence or villager-claimed points of interest, and no villager ever exists
+  to claim one. (Implemented: `VillagerExclusionHandler`.)
 - **Multi-village fault isolation.** Spawn multiple independent settlements
   (2-3 to start) instead of one large population. A catastrophic failure (e.g.
   a modded reactor meltdown) can wipe a village without ending the project.
