@@ -46,12 +46,16 @@ existing agent-simulation framework.
   death, village-wide loss), are real. This mirrors real-world learning through
   consequence (aviation safety, nuclear safety, etc.) rather than removing
   stakes.
-- **No vanilla villagers.** Vanilla Villager entities are prevented from ever
-  existing (their spawn is event-cancelled at the world layer, covering
-  structure-generation spawns, breeding, curing, eggs, and chunk load), so the
-  world's only inhabitants are project-controlled settlers. Generated village
-  structures, job-site blocks, beds, and loot are preserved untouched and
-  remain fully usable by settlers under normal vanilla mechanics — no
+- **No vanilla villagers or wandering traders.** Vanilla Villager entities are
+  prevented from ever existing (their spawn is event-cancelled at the world
+  layer, covering structure-generation spawns, breeding, curing, eggs, and
+  chunk load), so the world's only inhabitants are project-controlled
+  settlers. Wandering Traders (and their trader llamas) are excluded the same
+  way, for the same underlying reason plus one more: trading would be a bypass
+  around the earned gather/craft loop — settlers must obtain things by doing,
+  not by exchange with an NPC that hands over finished goods. Generated
+  village structures, job-site blocks, beds, and loot are preserved untouched
+  and remain fully usable by settlers under normal vanilla mechanics — no
   interaction gate, per "No artificial safety walls" above. Villager-driven
   mechanics (natural iron golem spawns, zombie village sieges, village cat
   spawns) never trigger as a natural consequence: they key off villager

@@ -40,7 +40,7 @@ src/main/java/com/coldfront96/emergentciv/
   event/NeedsDecayHandler.java  - day/night-driven need decay
   event/SocialProximityHandler.java - settler-proximity social restore tick
   event/StateSnapshotHandler.java   - snapshot logging cadence
-  event/VillagerExclusionHandler.java - keeps vanilla villagers out of the world
+  event/VillagerExclusionHandler.java - keeps villagers/wandering traders out of the world
   logging/StateSnapshotLogger.java  - per-settler JSONL state traces
   logging/StateSnapshotConfig.java  - snapshot interval / log path config
 src/main/resources/
