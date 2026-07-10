@@ -34,8 +34,8 @@ public final class NeedsDecayHandler {
             return;
         }
 
-        long dayTime = serverLevel.getDayTime();
-        if (dayTime % TICKS_PER_DAY != 0L) {
+        long gameTime = serverLevel.getGameTime();
+        if (gameTime % TICKS_PER_DAY != 0L) {
             return;
         }
 
