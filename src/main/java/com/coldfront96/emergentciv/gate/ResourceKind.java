@@ -14,15 +14,20 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * The three stone-age resource kinds a Phase 1 settler can actually gather to
- * satisfy a need. Each kind bundles the world-recognition ({@link #matches}),
- * the harvest interaction ({@link #harvest}), the item the settler ends up
- * holding, and which {@link NeedsComponent} restore method it feeds.
+ * The resource kinds a Phase 1 settler knows to seek to satisfy a need. Each
+ * kind bundles the world-recognition ({@link #matches}), the harvest
+ * interaction ({@link #harvest}), the item the settler ends up holding, and
+ * which {@link NeedsComponent} restore method it feeds.
  *
- * <p>This is the block-side companion to {@link StoneAgeResourceGate}: the gate
- * answers "is this <em>item</em> allowed at this tech tier?" while this enum
- * answers "which nearby <em>block</em> should I seek, and what happens when I
- * reach it?". The scripted {@code GatherResourceGoal} drives both.</p>
+ * <p>This is a target-selection heuristic, NOT a permission gate. Per
+ * {@code docs/DESIGN.md} ("No artificial safety walls") there is no coded
+ * check on what a settler may keep or interact with: a settler is free to
+ * attempt any interaction this scan finds, and the only thing deciding the
+ * outcome is vanilla's own natural consequences — most relevantly the
+ * correct-tool-for-drops rule applied in {@link #harvest}, so e.g. punching
+ * stone bare-handed breaks the block but yields nothing, exactly as it would
+ * for a player. Failed attempts are deliberately possible; they are recorded
+ * in the snapshot traces as training signal.</p>
  *
  * <p>The need mapping is intentionally simple for Phase 1: hunger is fed by
  * eating berries; energy is fed by gathering wood or stone. The social need is
@@ -49,9 +54,10 @@ public enum ResourceKind {
         }
 
         @Override
-        public ItemStack harvest(Level level, BlockPos pos, BlockState state) {
+        public ItemStack harvest(Level level, BlockPos pos, BlockState state, ItemStack tool) {
             // Pick the berries: reset the bush to its picked (age 1) state rather
-            // than destroying it, mirroring vanilla harvesting.
+            // than destroying it, mirroring vanilla harvesting. Hand-pickable in
+            // vanilla, so the tool never matters here.
             level.setBlock(pos, state.setValue(SweetBerryBushBlock.AGE, 1), Level.UPDATE_CLIENTS);
             return new ItemStack(Items.SWEET_BERRIES);
         }
@@ -70,10 +76,8 @@ public enum ResourceKind {
         }
 
         @Override
-        public ItemStack harvest(Level level, BlockPos pos, BlockState state) {
-            ItemStack gathered = new ItemStack(state.getBlock().asItem());
-            level.destroyBlock(pos, false);
-            return gathered;
+        public ItemStack harvest(Level level, BlockPos pos, BlockState state, ItemStack tool) {
+            return breakBlock(level, pos, state, tool);
         }
     },
 
@@ -81,8 +85,6 @@ public enum ResourceKind {
     STONE("gather_stone", 20.0F) {
         @Override
         public boolean matches(BlockState state) {
-            // Kept in step with the stone_age_stone item tag consulted by
-            // StoneAgeResourceGate, so anything gathered is also gate-allowed.
             return state.is(Blocks.STONE) || state.is(Blocks.COBBLESTONE);
         }
 
@@ -92,10 +94,8 @@ public enum ResourceKind {
         }
 
         @Override
-        public ItemStack harvest(Level level, BlockPos pos, BlockState state) {
-            ItemStack gathered = new ItemStack(state.getBlock().asItem());
-            level.destroyBlock(pos, false);
-            return gathered;
+        public ItemStack harvest(Level level, BlockPos pos, BlockState state, ItemStack tool) {
+            return breakBlock(level, pos, state, tool);
         }
     };
 
@@ -118,13 +118,33 @@ public enum ResourceKind {
 
     /**
      * Performs the world-side harvest interaction (break the block or pick the
-     * bush) and returns the item the settler now holds. Callers should verify
-     * {@link #matches} still holds first.
+     * bush) and returns the item the settler now holds — or
+     * {@link ItemStack#EMPTY} when vanilla's rules yield nothing (e.g. breaking
+     * stone without a pickaxe). The world interaction happens regardless of
+     * yield; there is no permission check here or anywhere upstream. Callers
+     * should verify {@link #matches} still holds first.
+     *
+     * @param tool whatever the settler is holding in its main hand, used for
+     *             vanilla's correct-tool-for-drops rule
      */
-    public abstract ItemStack harvest(Level level, BlockPos pos, BlockState state);
+    public abstract ItemStack harvest(Level level, BlockPos pos, BlockState state, ItemStack tool);
 
     public String actionLabel() {
         return actionLabel;
+    }
+
+    /**
+     * Breaks the block and returns its item if the held tool satisfies vanilla's
+     * correct-tool-for-drops rule (mirroring the check a player's block-break
+     * goes through), or {@link ItemStack#EMPTY} otherwise. Either way the block
+     * is destroyed — a wrong-tool attempt costs the block and yields nothing,
+     * exactly the natural consequence a bare-handed player experiences.
+     */
+    static ItemStack breakBlock(Level level, BlockPos pos, BlockState state, ItemStack tool) {
+        boolean drops = !state.requiresCorrectToolForDrops() || tool.isCorrectToolForDrops(state);
+        ItemStack gathered = drops ? new ItemStack(state.getBlock().asItem()) : ItemStack.EMPTY;
+        level.destroyBlock(pos, false);
+        return gathered;
     }
 
     /** True if {@link #matches} holds for any resource kind. */

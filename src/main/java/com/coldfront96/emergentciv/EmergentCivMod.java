@@ -9,8 +9,11 @@ import net.neoforged.neoforge.common.NeoForge;
  * EmergentCiv - Phase 1: world/gameplay systems only.
  *
  * This mod is the foundation of a multi-phase emergent civilization simulation.
- * Phase 1 scope: Settler entity, decaying needs, stone-age resource gate, and a
- * scripted placeholder AI goal. NO external AI/LLM integration happens here.
+ * Phase 1 scope: Settler entity, decaying needs, scripted survival goals, and
+ * state snapshot logging. There is deliberately no coded permission gate on
+ * what settlers may interact with — vanilla's natural consequences are the only
+ * limiter (see docs/DESIGN.md, "No artificial safety walls"). NO external
+ * AI/LLM integration happens here.
  *
  * TODO(Phase 2): Introduce an "agent-mind bridge" module that lets an external
  * AI process observe {@link com.coldfront96.emergentciv.entity.component.NeedsComponent}

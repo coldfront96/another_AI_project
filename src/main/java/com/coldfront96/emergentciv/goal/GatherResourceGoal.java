@@ -2,7 +2,6 @@ package com.coldfront96.emergentciv.goal;
 
 import com.coldfront96.emergentciv.entity.SettlerEntity;
 import com.coldfront96.emergentciv.gate.ResourceKind;
-import com.coldfront96.emergentciv.gate.StoneAgeResourceGate;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.InteractionHand;
@@ -21,9 +20,15 @@ import java.util.List;
  * has a critical need mappable to a resource, it searches the immediate area
  * for a matching wood/stone/berry block ({@link ResourceKind}), paths to it,
  * and once in reach performs the real interaction — breaking the block or
- * picking the bush — then restores the associated need and holds the gathered
- * item. All harvestable kinds are validated through {@link StoneAgeResourceGate}
- * so only tech-tier-appropriate resources are ever taken.</p>
+ * picking the bush. There is deliberately NO permission gate on what the
+ * settler may keep (see {@code docs/DESIGN.md}, "No artificial safety walls"):
+ * the attempt always happens, and vanilla's own mechanics — the
+ * correct-tool-for-drops rule applied inside {@link ResourceKind#harvest} —
+ * decide whether it yields anything. A successful gather restores the
+ * associated need and puts the item in hand; a failed one (empty yield, e.g.
+ * stone punched bare-handed) restores nothing and is recorded with a
+ * {@code *_failed} action label so the attempt still lands in the snapshot
+ * traces as training signal.</p>
  *
  * <p>Registered at a higher priority than {@link SimpleWanderGoal}, so a settler
  * that can actually reach a resource does so, and only wanders (to explore for
@@ -139,13 +144,17 @@ public class GatherResourceGoal extends Goal {
             return;
         }
 
-        ItemStack gathered = targetKind.harvest(level, targetBlock, state);
-        // Safety net: never keep a resource the tech-tier gate disallows.
-        if (!gathered.isEmpty() && StoneAgeResourceGate.isAllowed(gathered)) {
+        ItemStack gathered = targetKind.harvest(level, targetBlock, state, settler.getMainHandItem());
+        if (gathered.isEmpty()) {
+            // Vanilla yielded nothing (wrong tool for the block). No restore,
+            // but the attempt is recorded so failed tries land in the traces —
+            // per DESIGN.md they are training signal, not noise.
+            settler.setLastAction(targetKind.actionLabel() + "_failed");
+        } else {
             settler.setItemInHand(InteractionHand.MAIN_HAND, gathered);
+            targetKind.restore(settler.getNeeds());
+            settler.recordGather(targetKind);
         }
-        targetKind.restore(settler.getNeeds());
-        settler.recordGather(targetKind);
 
         // Consumed this target; clearing lets the goal re-evaluate next tick.
         targetBlock = null;
