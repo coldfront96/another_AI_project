@@ -55,6 +55,7 @@ public class SimpleWanderGoal extends Goal {
 
     @Override
     public void start() {
+        settler.setLastAction("seek_wander");
         settler.getNavigation().moveTo(wanderX, wanderY, wanderZ, WANDER_SPEED_MODIFIER);
     }
 
