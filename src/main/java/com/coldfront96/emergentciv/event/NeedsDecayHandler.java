@@ -19,7 +19,7 @@ import net.neoforged.neoforge.event.tick.LevelTickEvent;
  * rates (e.g. an agent choosing to rest to slow energy decay). Keep this
  * handler's per-day decay amounts easy to override/replace.
  */
-@EventBusSubscriber(modid = EmergentCivMod.MOD_ID)
+@EventBusSubscriber(modid = EmergentCivMod.MOD_ID, bus = EventBusSubscriber.Bus.FORGE)
 public final class NeedsDecayHandler {
 
     /** One Minecraft day is 24000 ticks; we apply decay once per in-game day. */
