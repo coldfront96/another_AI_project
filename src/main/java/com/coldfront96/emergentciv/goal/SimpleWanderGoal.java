@@ -41,7 +41,7 @@ public class SimpleWanderGoal extends Goal {
         if (!settler.shouldSeekResources()) {
             return false;
         }
-        Vec3 target = findResourceWardTarget();
+        Vec3 target = findResourceSeekingTarget();
         if (target == null) {
             return false;
         }
@@ -71,7 +71,7 @@ public class SimpleWanderGoal extends Goal {
      * Phase 1 does not search the world for actual wood/stone/berry blocks;
      * it only simulates seeking behavior toward a plausible nearby spot.
      */
-    private Vec3 findResourceWardTarget() {
+    private Vec3 findResourceSeekingTarget() {
         RandomSource random = settler.getRandom();
         Vec3 pos = DefaultRandomPos.getPos(settler, WANDER_RADIUS, 7);
         if (pos != null) {
