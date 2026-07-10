@@ -2,10 +2,12 @@ package com.coldfront96.emergentciv.gate;
 
 import com.coldfront96.emergentciv.entity.component.NeedsComponent;
 import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.SweetBerryBushBlock;
 import net.minecraft.world.level.block.state.BlockState;
@@ -81,7 +83,10 @@ public enum ResourceKind {
         }
     },
 
-    /** Stone-family blocks. Broken to gather stone; restores energy. */
+    /**
+     * Stone-family blocks. Broken to gather; restores energy. Yield follows the
+     * block's loot table, so natural stone gives cobblestone (as in vanilla).
+     */
     STONE("gather_stone", 20.0F) {
         @Override
         public boolean matches(BlockState state) {
@@ -134,15 +139,36 @@ public enum ResourceKind {
     }
 
     /**
-     * Breaks the block and returns its item if the held tool satisfies vanilla's
-     * correct-tool-for-drops rule (mirroring the check a player's block-break
-     * goes through), or {@link ItemStack#EMPTY} otherwise. Either way the block
-     * is destroyed — a wrong-tool attempt costs the block and yields nothing,
-     * exactly the natural consequence a bare-handed player experiences.
+     * Breaks the block and returns the settler's yield by rolling the block's
+     * real loot table ({@link Block#getDrops}), gated by vanilla's
+     * correct-tool-for-drops rule exactly as a player's block-break is. So
+     * mining stone with a pickaxe yields cobblestone (not a "stone" item),
+     * silk touch/fortune on the held tool apply through the loot context, and
+     * a wrong-tool attempt destroys the block and yields nothing — the same
+     * natural consequences a player experiences.
+     *
+     * <p>Loot rolls can return zero or several stacks, but a settler only has
+     * a main hand: the first non-empty stack becomes the held result and any
+     * further stacks are popped into the world as item entities (like vanilla
+     * block drops) rather than silently discarded. A zero-item roll returns
+     * {@link ItemStack#EMPTY}, which {@code GatherResourceGoal} already treats
+     * as a failed attempt (no restore, {@code *_failed} action label).</p>
      */
     static ItemStack breakBlock(Level level, BlockPos pos, BlockState state, ItemStack tool) {
+        ItemStack gathered = ItemStack.EMPTY;
         boolean drops = !state.requiresCorrectToolForDrops() || tool.isCorrectToolForDrops(state);
-        ItemStack gathered = drops ? new ItemStack(state.getBlock().asItem()) : ItemStack.EMPTY;
+        if (drops && level instanceof ServerLevel serverLevel) {
+            for (ItemStack drop : Block.getDrops(state, serverLevel, pos, level.getBlockEntity(pos), null, tool)) {
+                if (drop.isEmpty()) {
+                    continue;
+                }
+                if (gathered.isEmpty()) {
+                    gathered = drop;
+                } else {
+                    Block.popResource(level, pos, drop);
+                }
+            }
+        }
         level.destroyBlock(pos, false);
         return gathered;
     }
