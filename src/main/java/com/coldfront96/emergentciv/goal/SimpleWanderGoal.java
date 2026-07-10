@@ -42,9 +42,6 @@ public class SimpleWanderGoal extends Goal {
             return false;
         }
         Vec3 target = findResourceSeekingTarget();
-        if (target == null) {
-            return false;
-        }
         this.wanderX = target.x;
         this.wanderY = target.y;
         this.wanderZ = target.z;
