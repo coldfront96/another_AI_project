@@ -1,0 +1,25 @@
+# Gradle
+.gradle/
+build/
+out/
+run/
+runs/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+.classpath
+.project
+.settings/
+bin/
+
+# Generated sources/resources produced by runData
+src/generated/
+
+# OS
+.DS_Store
+
+# Logs
+logs/
+*.log
